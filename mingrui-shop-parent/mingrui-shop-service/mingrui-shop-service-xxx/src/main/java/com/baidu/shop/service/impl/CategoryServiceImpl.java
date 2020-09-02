@@ -6,6 +6,7 @@ import com.baidu.shop.base.Result;
 import com.baidu.shop.entities.CategoryEntity;
 import com.baidu.shop.mapper.CategoryMapper;
 import com.baidu.shop.service.CategoryService;
+import com.baidu.shop.utils.ObjectUtil;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 import tk.mybatis.mapper.entity.Example;
@@ -65,10 +66,11 @@ public class CategoryServiceImpl extends BaseApiService implements CategoryServi
     @Override
     public Result<JSONObject> delCategory(Integer id) {
 
-        CategoryEntity entity = categoryMapper.selectByPrimaryKey(id);
-        if (entity == null) {
+
+        if (ObjectUtil.isNull(id)) {
             return this.setResultError("传入的id查询不到结果，无效");
         }
+        CategoryEntity entity = categoryMapper.selectByPrimaryKey(id);
 
         if (entity.getIsParent() == 1){
             return this.setResultError("这是一个父节点不能删除");
@@ -87,5 +89,13 @@ public class CategoryServiceImpl extends BaseApiService implements CategoryServi
         categoryMapper.deleteByPrimaryKey(id);
 
         return this.setResultSuccess();
+    }
+
+    @Override
+    public Result<List<CategoryEntity>> getByBrandId(Integer brandId) {
+
+        List<CategoryEntity> list = categoryMapper.getByBrandId(brandId);
+
+        return this.setResultSuccess(list);
     }
 }

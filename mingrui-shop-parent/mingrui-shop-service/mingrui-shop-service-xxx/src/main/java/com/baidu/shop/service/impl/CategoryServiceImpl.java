@@ -3,10 +3,14 @@ package com.baidu.shop.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.baidu.shop.base.BaseApiService;
 import com.baidu.shop.base.Result;
-import com.baidu.shop.entities.CategoryEntity;
+import com.baidu.shop.entities.*;
+import com.baidu.shop.mapper.BrandMapper;
+import com.baidu.shop.mapper.CategoryBrandMapper;
 import com.baidu.shop.mapper.CategoryMapper;
+import com.baidu.shop.mapper.SpecGroupMapper;
 import com.baidu.shop.service.CategoryService;
 import com.baidu.shop.utils.ObjectUtil;
+import com.baidu.shop.utils.StringUtil;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 import tk.mybatis.mapper.entity.Example;
@@ -26,6 +30,15 @@ public class CategoryServiceImpl extends BaseApiService implements CategoryServi
 
     @Resource
     private CategoryMapper categoryMapper;
+
+    @Resource
+    private CategoryBrandMapper categoryBrandMapper;
+
+    @Resource
+    private SpecGroupMapper specGroupMapper;
+
+    @Resource
+    private BrandMapper brandMapper;
 
     @Override
     public Result<List<CategoryEntity>> getCategoryByPid(Integer pid) {
@@ -66,19 +79,15 @@ public class CategoryServiceImpl extends BaseApiService implements CategoryServi
     @Override
     public Result<JSONObject> delCategory(Integer id) {
 
+        if (ObjectUtil.isNull(id)) return this.setResultError("传入的id查询不到结果，无效");
 
-        if (ObjectUtil.isNull(id)) {
-            return this.setResultError("传入的id查询不到结果，无效");
-        }
         CategoryEntity entity = categoryMapper.selectByPrimaryKey(id);
-
-        if (entity.getIsParent() == 1){
-            return this.setResultError("这是一个父节点不能删除");
-        }
+        if (entity.getIsParent() == 1) return this.setResultError("这是一个父节点不能删除");
 
         Example example = new Example(CategoryEntity.class);
         example.createCriteria().andEqualTo("parentId",entity.getParentId());
         List<CategoryEntity> list = categoryMapper.selectByExample(example);
+
         if (list.size() == 1){
             CategoryEntity categoryEntity = new CategoryEntity();
             categoryEntity.setId(entity.getParentId());
@@ -86,8 +95,26 @@ public class CategoryServiceImpl extends BaseApiService implements CategoryServi
             categoryMapper.updateByPrimaryKeySelective(categoryEntity);
         }
 
-        categoryMapper.deleteByPrimaryKey(id);
+        Example specGroupExample = new Example(SpecGroupEntity.class);
+        specGroupExample.createCriteria().andEqualTo("cid",id);
+        List<SpecGroupEntity> specGroupEntities = specGroupMapper.selectByExample(specGroupExample);
 
+        Example categoryBrandExample = new Example(CategoryBrandEntity.class);
+        categoryBrandExample.createCriteria().andEqualTo("categoryId",id);
+        List<CategoryBrandEntity> categoryBrandEntities = categoryBrandMapper.selectByExample(categoryBrandExample);
+
+        String msg = "{" + entity.getName() + "}分类";
+        if (specGroupEntities.size() != 0){
+            msg += "绑定了{" + specGroupEntities.get(0).getName() + "}等规格组，不能删除";
+            if (categoryBrandEntities.size() != 0) msg += "同时，被{" + brandMapper.selectByPrimaryKey(categoryBrandEntities.get(0).getBrandId()).getName()+ "," + "}等品牌绑定，不能删除";
+            return this.setResultError(msg);
+        }
+        if (categoryBrandEntities.size() != 0){
+            msg += "被{" + brandMapper.selectByPrimaryKey(categoryBrandEntities.get(0).getBrandId()).getName()+ "," + "}等品牌绑定，不能删除";
+            return this.setResultError(msg);
+        }
+
+        categoryMapper.deleteByPrimaryKey(id);
         return this.setResultSuccess();
     }
 

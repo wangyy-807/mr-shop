@@ -22,7 +22,7 @@ import java.util.UUID;
  * @Version V1.0
  **/
 @RestController
-@RequestMapping(value = "upload")
+@RequestMapping(value = "uploadImg")
 public class UploadController extends BaseApiService {
     //linux系统的上传目录
     @Value(value = "${mingrui.upload.path.windows}")

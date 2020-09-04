@@ -1,17 +1,28 @@
 server:
   port: 8200
+
 spring:
   application:
     name: upload-server
+
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
 
+fdfs:
+  so-timeout: 1501
+  connect-timeout: 601
+  thumb-image: # 缩略图
+    width: 60
+    height: 60
+  tracker-list: # tracker地址
+    - 140.143.222.87:22122
+
 mingrui:
   upload:
     path:
       windows: E:\\images
-      linux: /usr/images
+      linux: /wangyue/images
     img:
-      host: http://image.mrshop.com
+      host: http://140.143.222.87/

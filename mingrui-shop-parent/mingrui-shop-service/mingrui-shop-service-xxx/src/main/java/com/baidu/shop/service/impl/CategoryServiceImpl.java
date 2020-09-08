@@ -10,7 +10,6 @@ import com.baidu.shop.mapper.CategoryMapper;
 import com.baidu.shop.mapper.SpecGroupMapper;
 import com.baidu.shop.service.CategoryService;
 import com.baidu.shop.utils.ObjectUtil;
-import com.baidu.shop.utils.StringUtil;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 import tk.mybatis.mapper.entity.Example;
@@ -84,17 +83,6 @@ public class CategoryServiceImpl extends BaseApiService implements CategoryServi
         CategoryEntity entity = categoryMapper.selectByPrimaryKey(id);
         if (entity.getIsParent() == 1) return this.setResultError("这是一个父节点不能删除");
 
-        Example example = new Example(CategoryEntity.class);
-        example.createCriteria().andEqualTo("parentId",entity.getParentId());
-        List<CategoryEntity> list = categoryMapper.selectByExample(example);
-
-        if (list.size() == 1){
-            CategoryEntity categoryEntity = new CategoryEntity();
-            categoryEntity.setId(entity.getParentId());
-            categoryEntity.setIsParent(0);
-            categoryMapper.updateByPrimaryKeySelective(categoryEntity);
-        }
-
         Example specGroupExample = new Example(SpecGroupEntity.class);
         specGroupExample.createCriteria().andEqualTo("cid",id);
         List<SpecGroupEntity> specGroupEntities = specGroupMapper.selectByExample(specGroupExample);
@@ -112,6 +100,17 @@ public class CategoryServiceImpl extends BaseApiService implements CategoryServi
         if (categoryBrandEntities.size() != 0){
             msg += "被{" + brandMapper.selectByPrimaryKey(categoryBrandEntities.get(0).getBrandId()).getName()+ "," + "}等品牌绑定，不能删除";
             return this.setResultError(msg);
+        }
+
+        Example example = new Example(CategoryEntity.class);
+        example.createCriteria().andEqualTo("parentId",entity.getParentId());
+        List<CategoryEntity> list = categoryMapper.selectByExample(example);
+
+        if (list.size() == 1){
+            CategoryEntity categoryEntity = new CategoryEntity();
+            categoryEntity.setId(entity.getParentId());
+            categoryEntity.setIsParent(0);
+            categoryMapper.updateByPrimaryKeySelective(categoryEntity);
         }
 
         categoryMapper.deleteByPrimaryKey(id);

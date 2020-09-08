@@ -41,7 +41,7 @@ public interface SpecificationService {
     Result<JsonObject> deleteSpecGroup(Integer id);
 
     @ApiOperation(value = "查询规格参数")
-        @GetMapping(value = "specParam/getInfo")
+    @GetMapping(value = "specParam/getInfo")
     Result<List<SpecParamEntity>> getSpecParam(SpecParamDTO specParamDTO);
 
     @ApiOperation(value = "新增规格参数")

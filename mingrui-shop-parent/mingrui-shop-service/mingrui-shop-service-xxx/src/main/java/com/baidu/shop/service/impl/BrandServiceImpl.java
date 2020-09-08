@@ -9,6 +9,7 @@ import com.baidu.shop.mapper.BrandMapper;
 import com.baidu.shop.mapper.CategoryBrandMapper;
 import com.baidu.shop.service.BrandService;
 import com.baidu.shop.utils.BaiduBeanUtil;
+import com.baidu.shop.utils.ObjectUtil;
 import com.baidu.shop.utils.PinyinUtil;
 import com.baidu.shop.utils.StringUtil;
 import com.github.pagehelper.Page;
@@ -20,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 import tk.mybatis.mapper.entity.Example;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,10 +42,27 @@ public class BrandServiceImpl extends BaseApiService implements BrandService {
     private CategoryBrandMapper categoryBrandMapper;
 
     @Override
+    public Result<List<BrandEntity>> getBrandByCate(Integer cid) {
+
+        List<BrandEntity> list = brandMapper.getBrandByCateId(cid);
+
+        return this.setResultSuccess(list);
+    }
+
+    @Override
+    public List<String> getNameById(Integer id) {
+
+        List<String> list = brandMapper.getNameById(id);
+
+        return list;
+    }
+
+    @Override
     public Result<PageInfo<BrandEntity>> getBrandInfo(BrandDTO brandDTO) {
 
         //分页
-        PageHelper.startPage(brandDTO.getPage(),brandDTO.getRows());
+        if (ObjectUtil.isNotNull(brandDTO.getPage()) && ObjectUtil.isNotNull(brandDTO.getRows()))
+            PageHelper.startPage(brandDTO.getPage(),brandDTO.getRows());
         Example example = new Example(BrandEntity.class);
 
         //排序
@@ -53,6 +70,7 @@ public class BrandServiceImpl extends BaseApiService implements BrandService {
 
         //条件查询
         if (StringUtil.isNotEmpty(brandDTO.getName())) example.createCriteria().andLike("name","%" + brandDTO.getName() + "%");
+        if (ObjectUtil.isNotNull(brandDTO.getId())) example.createCriteria().andEqualTo("id",brandDTO.getId());
         List<BrandEntity> list = brandMapper.selectByExample(example);
 
         //返回pageInfo  分页、条件查询、排序结果

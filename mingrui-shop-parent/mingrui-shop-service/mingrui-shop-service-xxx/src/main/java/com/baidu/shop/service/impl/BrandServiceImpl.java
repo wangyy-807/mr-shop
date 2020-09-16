@@ -5,8 +5,10 @@ import com.baidu.shop.base.Result;
 import com.baidu.shop.dto.BrandDTO;
 import com.baidu.shop.entities.BrandEntity;
 import com.baidu.shop.entities.CategoryBrandEntity;
+import com.baidu.shop.entities.SpuEntity;
 import com.baidu.shop.mapper.BrandMapper;
 import com.baidu.shop.mapper.CategoryBrandMapper;
+import com.baidu.shop.mapper.SpuMapper;
 import com.baidu.shop.service.BrandService;
 import com.baidu.shop.utils.BaiduBeanUtil;
 import com.baidu.shop.utils.ObjectUtil;
@@ -40,6 +42,9 @@ public class BrandServiceImpl extends BaseApiService implements BrandService {
 
     @Resource
     private CategoryBrandMapper categoryBrandMapper;
+
+    @Resource
+    private SpuMapper spuMapper;
 
     @Override
     public Result<List<BrandEntity>> getBrandByCate(Integer cid) {
@@ -121,6 +126,14 @@ public class BrandServiceImpl extends BaseApiService implements BrandService {
     @Transactional
     @Override
     public Result<JsonObject> deleteBrandInfo(Integer brandId) {
+
+        //如果商品绑定了品牌不能删除
+        Example example = new Example(SpuEntity.class);
+        if (ObjectUtil.isNotNull(brandId))
+            example.createCriteria().andEqualTo("brandId",brandId);
+        List<SpuEntity> list = spuMapper.selectByExample(example);
+        if (list.size() > 0)
+            return this.setResultError("该品牌被商品绑定不能删除");
 
         //删除操作
         brandMapper.deleteByPrimaryKey(brandId);

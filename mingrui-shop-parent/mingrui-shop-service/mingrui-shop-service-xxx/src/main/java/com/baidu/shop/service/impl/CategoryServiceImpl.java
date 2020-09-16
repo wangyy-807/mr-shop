@@ -4,10 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baidu.shop.base.BaseApiService;
 import com.baidu.shop.base.Result;
 import com.baidu.shop.entities.*;
-import com.baidu.shop.mapper.BrandMapper;
-import com.baidu.shop.mapper.CategoryBrandMapper;
-import com.baidu.shop.mapper.CategoryMapper;
-import com.baidu.shop.mapper.SpecGroupMapper;
+import com.baidu.shop.mapper.*;
 import com.baidu.shop.service.CategoryService;
 import com.baidu.shop.utils.ObjectUtil;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +35,9 @@ public class CategoryServiceImpl extends BaseApiService implements CategoryServi
 
     @Resource
     private BrandMapper brandMapper;
+
+    @Resource
+    private SpuMapper spuMapper;
 
     @Override
     public Result<List<CategoryEntity>> getCategoryByPid(Integer pid) {
@@ -90,6 +90,14 @@ public class CategoryServiceImpl extends BaseApiService implements CategoryServi
         Example categoryBrandExample = new Example(CategoryBrandEntity.class);
         categoryBrandExample.createCriteria().andEqualTo("categoryId",id);
         List<CategoryBrandEntity> categoryBrandEntities = categoryBrandMapper.selectByExample(categoryBrandExample);
+
+        Example example1 = new Example(SpuEntity.class);
+        if (ObjectUtil.isNotNull(id))
+            example1.createCriteria().andEqualTo("cid3",id);
+        List<SpuEntity> spuEntities = spuMapper.selectByExample(example1);
+
+        if (spuEntities.size() != 0)
+            return this.setResultError("分类被商品绑定不能删除");
 
         String msg = "{" + entity.getName() + "}分类";
         if (specGroupEntities.size() != 0){

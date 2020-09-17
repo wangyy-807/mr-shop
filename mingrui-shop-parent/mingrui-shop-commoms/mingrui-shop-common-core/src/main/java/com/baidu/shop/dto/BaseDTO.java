@@ -1,6 +1,5 @@
 package com.baidu.shop.dto;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;

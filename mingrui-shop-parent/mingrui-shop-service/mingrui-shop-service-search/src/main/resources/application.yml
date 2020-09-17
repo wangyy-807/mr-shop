@@ -1,0 +1,17 @@
+server:
+  port: 8300
+
+spring:
+  elasticsearch:
+    rest:
+      uris: 140.143.222.87:9200
+  application:
+    name: search-server
+
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 5000

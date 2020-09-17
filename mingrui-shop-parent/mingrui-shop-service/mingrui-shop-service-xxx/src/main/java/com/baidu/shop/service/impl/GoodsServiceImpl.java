@@ -3,12 +3,10 @@ package com.baidu.shop.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.baidu.shop.base.BaseApiService;
 import com.baidu.shop.base.Result;
-import com.baidu.shop.dto.BrandDTO;
 import com.baidu.shop.dto.SkuDTO;
 import com.baidu.shop.dto.SpuDTO;
 import com.baidu.shop.entities.*;
 import com.baidu.shop.mapper.*;
-import com.baidu.shop.service.BrandService;
 import com.baidu.shop.service.GoodsService;
 import com.baidu.shop.utils.BaiduBeanUtil;
 import com.baidu.shop.utils.ObjectUtil;
@@ -22,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 import tk.mybatis.mapper.entity.Example;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,7 +54,7 @@ public class GoodsServiceImpl extends BaseApiService implements GoodsService {
 
     @Transactional
     @Override
-    public Result<PageInfo<SpuEntity>> getSpuInfo(SpuDTO spuDTO) {
+    public Result<List<SpuDTO>> getSpuInfo(SpuDTO spuDTO) {
 
         //分页
         if (ObjectUtil.isNotNull(spuDTO.getPage()) && ObjectUtil.isNotNull(spuDTO.getRows()))
@@ -73,7 +70,8 @@ public class GoodsServiceImpl extends BaseApiService implements GoodsService {
             criteria.andEqualTo("saleable",spuDTO.getSaleable());
 
         //排序
-        example.setOrderByClause(spuDTO.getOrderByClause());
+        if (StringUtil.isNotEmpty(spuDTO.getSort()))
+            example.setOrderByClause(spuDTO.getOrderByClause());
 
         //条件查询
         List<SpuEntity> list = spuMapper.selectByExample(example);

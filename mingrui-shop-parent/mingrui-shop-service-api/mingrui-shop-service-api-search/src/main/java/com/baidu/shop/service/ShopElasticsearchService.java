@@ -2,9 +2,12 @@ package com.baidu.shop.service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baidu.shop.base.Result;
+import com.baidu.shop.document.GoodsDoc;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import java.util.List;
 
 /**
  * @ClassName ShopElasticsearchService
@@ -23,5 +26,9 @@ public interface ShopElasticsearchService {
     @ApiOperation(value = "初始化ES中的商品数据")
     @GetMapping(value = "es/saveEsData")
     Result<JSONObject> saveEsData();
+
+    @ApiOperation(value = "搜索")
+    @GetMapping(value = "es/search")
+    Result<List<GoodsDoc>> search(String search,Integer page);
 
 }

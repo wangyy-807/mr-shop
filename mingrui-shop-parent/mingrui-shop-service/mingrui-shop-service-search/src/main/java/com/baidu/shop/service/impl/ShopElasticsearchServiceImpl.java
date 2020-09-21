@@ -12,10 +12,18 @@ import com.baidu.shop.entities.SpuDetailEntity;
 import com.baidu.shop.feign.GoodsFeign;
 import com.baidu.shop.feign.SpecificationFeign;
 import com.baidu.shop.service.ShopElasticsearchService;
+import com.baidu.shop.utils.ESHighLightUtil;
 import com.baidu.shop.utils.JSONUtil;
+import com.baidu.shop.utils.StringUtil;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.codehaus.jackson.annotate.JsonUnwrapped;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.IndexOperations;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -59,16 +67,34 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
 
         IndexOperations indexOperations = elasticsearchRestTemplate.indexOps(GoodsDoc.class);
         if (!indexOperations.exists()){
-
-            //indexOperations.create();
             indexOperations.createMapping();
-
         }
 
         List<GoodsDoc> goodsDocs = this.esGoodsInfo();
         elasticsearchRestTemplate.save(goodsDocs);
 
         return this.setResultSuccess();
+    }
+
+    @Override
+    public Result<List<GoodsDoc>> search(String search,Integer page) {
+
+        NativeSearchQueryBuilder searchQueryBuilder = new NativeSearchQueryBuilder();
+        if (StringUtil.isNotEmpty(search))
+            searchQueryBuilder.withQuery(QueryBuilders.multiMatchQuery(search,"title","brandName","categoryName"));
+        searchQueryBuilder.withPageable(PageRequest.of(page-1,10));
+        searchQueryBuilder.withHighlightBuilder(ESHighLightUtil.getHighlightBuilder("title"));
+        SearchHits<GoodsDoc> searchHits = elasticsearchRestTemplate.search(searchQueryBuilder.build(), GoodsDoc.class);
+        List<SearchHit<GoodsDoc>> highLightHit = ESHighLightUtil.getHighLightHit(searchHits.getSearchHits());
+        List<GoodsDoc> goodsDocs = highLightHit.stream().map(searchHit -> searchHit.getContent()).collect(Collectors.toList());
+
+        Map<String, Integer> map = new HashMap<>();
+        map.put("total",Long.valueOf(searchHits.getTotalHits()).intValue());
+        map.put("totalPage",Double.valueOf(Math.ceil(Long.valueOf(searchHits.getTotalHits()).doubleValue() / 10)).intValue());
+
+        String message = JSONUtil.toJsonString(map);
+
+        return this.setResult(HttpStatus.OK.value(),message,goodsDocs);
     }
 
     private List<GoodsDoc> esGoodsInfo() {
@@ -112,11 +138,11 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
         Result<List<SkuDTO>> skuBySpuId = goodsFeign.getSkuBySpuId(spuId);
 
         List<Long> priceList = new ArrayList<>();
-        Map<String, Object> skuMap = new HashMap<>();
-        List<Map<String, Object>> skuMapList = null;
+        List<Map<String, Object>> skuMapList = new ArrayList<>();
         if (skuBySpuId.getCode() == HttpStatus.OK.value()){
             List<SkuDTO> skuList = skuBySpuId.getData();
             skuMapList = skuList.stream().map(sku -> {
+                Map<String, Object> skuMap = new HashMap<>();
                 skuMap.put("id", sku.getId());
                 skuMap.put("title", sku.getTitle());
                 skuMap.put("images", sku.getImages());

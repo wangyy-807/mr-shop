@@ -3,6 +3,7 @@ package com.baidu.shop.mapper;
 import com.baidu.shop.base.Result;
 import com.baidu.shop.entities.BrandEntity;
 import org.apache.ibatis.annotations.Select;
+import tk.mybatis.mapper.additional.idlist.SelectByIdListMapper;
 import tk.mybatis.mapper.common.Mapper;
 
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.List;
  * @Date 2020/8/31
  * @Version V1.0
  **/
-public interface BrandMapper extends Mapper<BrandEntity> {
+public interface BrandMapper extends Mapper<BrandEntity>, SelectByIdListMapper<BrandEntity,Integer> {
 
     @Select(value = "select name from tb_brand where id = #{brandId}")
     List<String> getNameById(Integer brandId);

@@ -41,9 +41,14 @@ public interface BrandService {
     public Result<JsonObject> deleteBrandInfo(Integer brandId);
 
     @ApiOperation(value = "通过id查询品牌名称")
-    public List<String> getNameById(Integer id);
+    @GetMapping(value = "brand/getNameById")
+    List<String> getNameById(Integer id);
 
     @GetMapping(value = "brand/getBrandByCate")
     @ApiOperation(value = "通过分类id获取品牌信息")
     public Result<List<BrandEntity>> getBrandByCate(Integer cid);
+
+    @GetMapping(value = "brand/getBrandByIdList")
+    @ApiOperation(value = "通过品牌id集合获取品牌信息")
+    Result<List<BrandEntity>> getBrandByIdList(@RequestParam String brandIdsStr);
 }

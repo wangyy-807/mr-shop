@@ -170,4 +170,13 @@ public class BrandServiceImpl extends BaseApiService implements BrandService {
 
         return this.setResultSuccess();
     }
+
+    @Override
+    public Result<List<BrandEntity>> getBrandByIdList(String brandIdsStr) {
+
+        List<String> asList = Arrays.asList(brandIdsStr.split(","));
+        List<BrandEntity> list = brandMapper.selectByIdList(asList.stream().map(cidStr -> Integer.parseInt(cidStr)).collect(Collectors.toList()));
+
+        return this.setResultSuccess(list);
+    }
 }

@@ -7,17 +7,26 @@ import com.baidu.shop.document.GoodsDoc;
 import com.baidu.shop.dto.SkuDTO;
 import com.baidu.shop.dto.SpecParamDTO;
 import com.baidu.shop.dto.SpuDTO;
+import com.baidu.shop.entities.BrandEntity;
+import com.baidu.shop.entities.CategoryEntity;
 import com.baidu.shop.entities.SpecParamEntity;
 import com.baidu.shop.entities.SpuDetailEntity;
+import com.baidu.shop.feign.BrandFeign;
+import com.baidu.shop.feign.CategoryFeign;
 import com.baidu.shop.feign.GoodsFeign;
 import com.baidu.shop.feign.SpecificationFeign;
+import com.baidu.shop.response.GoodsResponse;
 import com.baidu.shop.service.ShopElasticsearchService;
 import com.baidu.shop.utils.ESHighLightUtil;
 import com.baidu.shop.utils.JSONUtil;
 import com.baidu.shop.utils.StringUtil;
+import feign.Feign;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.codehaus.jackson.annotate.JsonUnwrapped;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.IndexOperations;
@@ -46,6 +55,12 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
 
     @Resource
     private GoodsFeign goodsFeign;
+
+    @Resource
+    private BrandFeign brandFeign;
+
+    @Resource
+    private CategoryFeign categoryFeign;
 
     @Resource
     private SpecificationFeign specificationFeign;
@@ -77,24 +92,49 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
     }
 
     @Override
-    public Result<List<GoodsDoc>> search(String search,Integer page) {
+    public GoodsResponse search(String search,Integer page) {
 
-        NativeSearchQueryBuilder searchQueryBuilder = new NativeSearchQueryBuilder();
-        if (StringUtil.isNotEmpty(search))
-            searchQueryBuilder.withQuery(QueryBuilders.multiMatchQuery(search,"title","brandName","categoryName"));
-        searchQueryBuilder.withPageable(PageRequest.of(page-1,10));
-        searchQueryBuilder.withHighlightBuilder(ESHighLightUtil.getHighlightBuilder("title"));
-        SearchHits<GoodsDoc> searchHits = elasticsearchRestTemplate.search(searchQueryBuilder.build(), GoodsDoc.class);
+        if (StringUtil.isEmpty(search)) throw new RuntimeException("查询内容不能为空");
+
+        SearchHits<GoodsDoc> searchHits = elasticsearchRestTemplate.search(this.getNativeSearchQueryBuilder(search, page).build(), GoodsDoc.class);
         List<SearchHit<GoodsDoc>> highLightHit = ESHighLightUtil.getHighLightHit(searchHits.getSearchHits());
         List<GoodsDoc> goodsDocs = highLightHit.stream().map(searchHit -> searchHit.getContent()).collect(Collectors.toList());
 
-        Map<String, Integer> map = new HashMap<>();
-        map.put("total",Long.valueOf(searchHits.getTotalHits()).intValue());
-        map.put("totalPage",Double.valueOf(Math.ceil(Long.valueOf(searchHits.getTotalHits()).doubleValue() / 10)).intValue());
+        Aggregations aggregations = searchHits.getAggregations();
+        List<CategoryEntity> categoryList = getCategoryList(aggregations);
+        List<BrandEntity> brandList = getBrandList(aggregations);
 
-        String message = JSONUtil.toJsonString(map);
+        GoodsResponse goodsResponse = new GoodsResponse(searchHits.getTotalHits(), Double.valueOf(Math.ceil(Long.valueOf(searchHits.getTotalHits()).doubleValue() / 10)).longValue(), brandList, categoryList, goodsDocs);
 
-        return this.setResult(HttpStatus.OK.value(),message,goodsDocs);
+        return goodsResponse;
+    }
+
+    private NativeSearchQueryBuilder getNativeSearchQueryBuilder(String search, Integer page) {
+        NativeSearchQueryBuilder searchQueryBuilder = new NativeSearchQueryBuilder();
+        searchQueryBuilder.withQuery(QueryBuilders.multiMatchQuery(search,"title","brandName","categoryName"));
+
+        searchQueryBuilder.addAggregation(AggregationBuilders.terms("cid_agg").field("cid3"));
+        searchQueryBuilder.addAggregation(AggregationBuilders.terms("brand_agg").field("brandId").size(14));
+
+        searchQueryBuilder.withPageable(PageRequest.of(page -1,10));
+        searchQueryBuilder.withHighlightBuilder(ESHighLightUtil.getHighlightBuilder("title"));
+        return searchQueryBuilder;
+    }
+
+    private List<CategoryEntity> getCategoryList(Aggregations aggregations) {
+        Terms cid_agg = aggregations.get("cid_agg");
+        List<? extends Terms.Bucket> cidBuckets = cid_agg.getBuckets();
+        List<String> cidList = cidBuckets.stream().map(cidBucket -> cidBucket.getKeyAsString()).collect(Collectors.toList());
+        Result<List<CategoryEntity>> categoryResult = categoryFeign.getCategoryByIdList(String.join(",",cidList));
+        return categoryResult.getData();
+    }
+
+    private List<BrandEntity> getBrandList(Aggregations aggregations) {
+        Terms brand_agg = aggregations.get("brand_agg");
+        List<? extends Terms.Bucket> brandIdBuckets = brand_agg.getBuckets();
+        List<String> brandIdList = brandIdBuckets.stream().map(brandIdBucket -> brandIdBucket.getKeyAsString()).collect(Collectors.toList());
+        Result<List<BrandEntity>> brandResult = brandFeign.getBrandByIdList(String.join(",",brandIdList));
+        return brandResult.getData();
     }
 
     private List<GoodsDoc> esGoodsInfo() {

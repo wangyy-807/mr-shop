@@ -37,10 +37,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -96,22 +93,66 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
 
         if (StringUtil.isEmpty(search)) throw new RuntimeException("查询内容不能为空");
 
-        SearchHits<GoodsDoc> searchHits = elasticsearchRestTemplate.search(this.getNativeSearchQueryBuilder(search, page).build(), GoodsDoc.class);
+        SearchHits<GoodsDoc> searchHits = elasticsearchRestTemplate.search(
+                this.getNativeSearchQueryBuilder(search, page).build(), GoodsDoc.class);
         List<SearchHit<GoodsDoc>> highLightHit = ESHighLightUtil.getHighLightHit(searchHits.getSearchHits());
-        List<GoodsDoc> goodsDocs = highLightHit.stream().map(searchHit -> searchHit.getContent()).collect(Collectors.toList());
+        List<GoodsDoc> goodsDocs = highLightHit.stream().map(
+                searchHit -> searchHit.getContent())
+                .collect(Collectors.toList());
 
         Aggregations aggregations = searchHits.getAggregations();
-        List<CategoryEntity> categoryList = getCategoryList(aggregations);
+        List<CategoryEntity> categoryList = null;
+        Integer hotCid = 0;
+        Map<Integer, List<CategoryEntity>> map = getCategoryList(aggregations);
+        for(Map.Entry<Integer, List<CategoryEntity>> mapEntry : map.entrySet()){
+            hotCid = mapEntry.getKey();
+            categoryList = mapEntry.getValue();
+        }
         List<BrandEntity> brandList = getBrandList(aggregations);
 
-        GoodsResponse goodsResponse = new GoodsResponse(searchHits.getTotalHits(), Double.valueOf(Math.ceil(Long.valueOf(searchHits.getTotalHits()).doubleValue() / 10)).longValue(), brandList, categoryList, goodsDocs);
+        Map<String, List<String>> map1 = getSpecParam(search, hotCid);
+
+        GoodsResponse goodsResponse = new GoodsResponse(searchHits.getTotalHits(),
+                Double.valueOf(Math.ceil(Long.valueOf(searchHits.getTotalHits()).doubleValue() / 10)).longValue(),
+                brandList, categoryList, goodsDocs, map1);
 
         return goodsResponse;
     }
 
+    private Map<String, List<String>> getSpecParam(String search, Integer hotCid) {
+        SpecParamDTO specParamDTO = new SpecParamDTO();
+        specParamDTO.setCid(hotCid);
+        specParamDTO.setSearching(1);
+        Result<List<SpecParamEntity>> specParamResult = specificationFeign.getSpecParam(specParamDTO);
+        if (specParamResult.getCode() == HttpStatus.OK.value()){
+            List<SpecParamEntity> paramData = specParamResult.getData();
+
+            NativeSearchQueryBuilder searchQueryBuilder = new NativeSearchQueryBuilder();
+            searchQueryBuilder.withQuery(QueryBuilders.multiMatchQuery(
+                    search,"title","brandName","categoryName"));
+            searchQueryBuilder.withPageable(PageRequest.of(0,1));
+            paramData.stream().forEach(specParam -> searchQueryBuilder.addAggregation(
+                    AggregationBuilders.terms(specParam.getName()).field("specs." + specParam.getName() + ".keyword")));
+
+            SearchHits<GoodsDoc> search1 = elasticsearchRestTemplate.search(searchQueryBuilder.build(), GoodsDoc.class);
+            HashMap<String, List<String>> map1 = new HashMap<>();
+            Aggregations aggregations1 = search1.getAggregations();
+            paramData.stream().forEach(specParam -> {
+                Terms terms = aggregations1.get(specParam.getName());
+                List<? extends Terms.Bucket> buckets = terms.getBuckets();
+                List<String> valueList = buckets.stream().map(
+                        bucket -> bucket.getKeyAsString()).collect(Collectors.toList());
+                map1.put(specParam.getName(),valueList);
+            });
+            return map1;
+        }
+        return null;
+    }
+
     private NativeSearchQueryBuilder getNativeSearchQueryBuilder(String search, Integer page) {
         NativeSearchQueryBuilder searchQueryBuilder = new NativeSearchQueryBuilder();
-        searchQueryBuilder.withQuery(QueryBuilders.multiMatchQuery(search,"title","brandName","categoryName"));
+        searchQueryBuilder.withQuery(QueryBuilders.multiMatchQuery(
+                search,"title","brandName","categoryName"));
 
         searchQueryBuilder.addAggregation(AggregationBuilders.terms("cid_agg").field("cid3"));
         searchQueryBuilder.addAggregation(AggregationBuilders.terms("brand_agg").field("brandId").size(14));
@@ -121,18 +162,35 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
         return searchQueryBuilder;
     }
 
-    private List<CategoryEntity> getCategoryList(Aggregations aggregations) {
+    private Map<Integer, List<CategoryEntity>> getCategoryList(Aggregations aggregations) {
         Terms cid_agg = aggregations.get("cid_agg");
         List<? extends Terms.Bucket> cidBuckets = cid_agg.getBuckets();
-        List<String> cidList = cidBuckets.stream().map(cidBucket -> cidBucket.getKeyAsString()).collect(Collectors.toList());
-        Result<List<CategoryEntity>> categoryResult = categoryFeign.getCategoryByIdList(String.join(",",cidList));
-        return categoryResult.getData();
+        List<Integer> hotCid = Arrays.asList(0);
+        List<Long> maxCount = Arrays.asList(0L);
+        Map<Integer, List<CategoryEntity>> map = new HashMap<>();
+        List<String> cidList = cidBuckets.stream().map(cidBucket -> {
+
+            if (cidBucket.getDocCount() > maxCount.get(0)){
+                maxCount.set(0,cidBucket.getDocCount());
+                hotCid.set(0,cidBucket.getKeyAsNumber().intValue());
+            }
+
+            return cidBucket.getKeyAsString();
+        }).collect(Collectors.toList());
+        Result<List<CategoryEntity>> categoryResult = categoryFeign.getCategoryByIdList(
+                String.join(",",cidList));
+
+        map.put(hotCid.get(0),categoryResult.getData());
+
+        return map;
     }
 
     private List<BrandEntity> getBrandList(Aggregations aggregations) {
         Terms brand_agg = aggregations.get("brand_agg");
         List<? extends Terms.Bucket> brandIdBuckets = brand_agg.getBuckets();
-        List<String> brandIdList = brandIdBuckets.stream().map(brandIdBucket -> brandIdBucket.getKeyAsString()).collect(Collectors.toList());
+        List<String> brandIdList = brandIdBuckets.stream().map(
+                brandIdBucket -> brandIdBucket.getKeyAsString())
+                .collect(Collectors.toList());
         Result<List<BrandEntity>> brandResult = brandFeign.getBrandByIdList(String.join(",",brandIdList));
         return brandResult.getData();
     }
@@ -195,7 +253,7 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
         return hashMap;
     }
 
-    private Map<String, Object> getSpecs(SpuDTO spu) {
+    private Map<String, Object> getSpecs(SpuDTO spu){
         SpecParamDTO specParamDTO = new SpecParamDTO();
         specParamDTO.setCid(spu.getCid3());
         specParamDTO.setSearching(1);
@@ -217,7 +275,10 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
                 specList.stream().forEach(specParam -> {
                     if (specParam.getGeneric() == 1){
                         if (specParam.getNumeric() == 1 && specParam.getSearching() == 1){
-                            specMap.put(specParam.getName(),chooseSegment(genericMap.get(specParam.getId() + ""),specParam.getSegments(),specParam.getUnit()));
+                            specMap.put(specParam.getName(),
+                                    chooseSegment(genericMap.get(specParam.getId() + ""),
+                                    specParam.getSegments(),
+                                    specParam.getUnit()));
                         }else{
                             specMap.put(specParam.getName(),genericMap.get(specParam.getId() + ""));
                         }

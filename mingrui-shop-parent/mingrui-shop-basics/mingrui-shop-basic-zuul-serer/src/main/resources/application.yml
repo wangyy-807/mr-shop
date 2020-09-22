@@ -38,7 +38,7 @@ hystrix:
       execution:
         isolation:
           thread:
-            timeoutInMilliseconds: 100000 # 熔断超时时长：6000ms
+            timeoutInMilliseconds: 10000 # 熔断超时时长：6000ms
 
 eureka:
   client:

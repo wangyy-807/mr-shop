@@ -19,9 +19,12 @@ import com.baidu.shop.response.GoodsResponse;
 import com.baidu.shop.service.ShopElasticsearchService;
 import com.baidu.shop.utils.ESHighLightUtil;
 import com.baidu.shop.utils.JSONUtil;
+import com.baidu.shop.utils.ObjectUtil;
 import com.baidu.shop.utils.StringUtil;
 import feign.Feign;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -89,12 +92,12 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
     }
 
     @Override
-    public GoodsResponse search(String search,Integer page) {
+    public GoodsResponse search(String search,Integer page, String filter, Integer cid) {
 
         if (StringUtil.isEmpty(search)) throw new RuntimeException("查询内容不能为空");
 
         SearchHits<GoodsDoc> searchHits = elasticsearchRestTemplate.search(
-                this.getNativeSearchQueryBuilder(search, page).build(), GoodsDoc.class);
+                this.getNativeSearchQueryBuilder(search, page, filter).build(), GoodsDoc.class);
         List<SearchHit<GoodsDoc>> highLightHit = ESHighLightUtil.getHighLightHit(searchHits.getSearchHits());
         List<GoodsDoc> goodsDocs = highLightHit.stream().map(
                 searchHit -> searchHit.getContent())
@@ -112,9 +115,12 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
 
         Map<String, List<String>> map1 = getSpecParam(search, hotCid);
 
+        if (cid == 0) cid = hotCid;
+        String data = categoryFeign.getCateName(cid);
+
         GoodsResponse goodsResponse = new GoodsResponse(searchHits.getTotalHits(),
                 Double.valueOf(Math.ceil(Long.valueOf(searchHits.getTotalHits()).doubleValue() / 10)).longValue(),
-                brandList, categoryList, goodsDocs, map1);
+                brandList, categoryList, goodsDocs, map1, data);
 
         return goodsResponse;
     }
@@ -149,8 +155,24 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
         return null;
     }
 
-    private NativeSearchQueryBuilder getNativeSearchQueryBuilder(String search, Integer page) {
+    private NativeSearchQueryBuilder getNativeSearchQueryBuilder(String search, Integer page, String filter) {
         NativeSearchQueryBuilder searchQueryBuilder = new NativeSearchQueryBuilder();
+
+        if (StringUtil.isNotEmpty(filter) && filter.length() > 2){
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+            Map<String, String> filterMap = JSONUtil.toMapValueString(filter);
+            filterMap.forEach((key,value) -> {
+                MatchQueryBuilder matchQueryBuilder =null;
+                if (key.equals("cid3") || key.equals("brandId")){
+                    matchQueryBuilder = QueryBuilders.matchQuery(key, value);
+                }else{
+                    matchQueryBuilder = QueryBuilders.matchQuery("specs." + key + ".keyword",value);
+                }
+                boolQuery.must(matchQueryBuilder);
+            });
+            searchQueryBuilder.withFilter(boolQuery);
+        }
+
         searchQueryBuilder.withQuery(QueryBuilders.multiMatchQuery(
                 search,"title","brandName","categoryName"));
 

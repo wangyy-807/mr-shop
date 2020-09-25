@@ -37,6 +37,11 @@ spring:
 mapper:
   mappers: tk.mybatis.mapper.common.Mapper
   identity: MYSQL
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
 #日志设置
 logging:
   level:

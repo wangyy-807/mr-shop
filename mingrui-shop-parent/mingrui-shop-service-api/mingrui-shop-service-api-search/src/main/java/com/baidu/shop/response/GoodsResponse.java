@@ -32,13 +32,17 @@ public class GoodsResponse extends Result<List<GoodsDoc>> {
 
     private Map<String, List<String>> specParamValueMap;
 
-    public GoodsResponse(Long total, Long totalPage, List<BrandEntity> brandList, List<CategoryEntity> categoryList, List<GoodsDoc> goodsDocs, Map<String, List<String>> specParamValueMap){
+    private String cateNameStr;
+
+    public GoodsResponse(Long total, Long totalPage, List<BrandEntity> brandList, List<CategoryEntity> categoryList,
+                         List<GoodsDoc> goodsDocs, Map<String, List<String>> specParamValueMap, String cateNameStr){
         super(HTTPStatus.OK,HTTPStatus.OK + "",goodsDocs);
         this.total = total;
         this.totalPage = totalPage;
         this.brandList = brandList;
         this.categoryList = categoryList;
         this.specParamValueMap = specParamValueMap;
+        this.cateNameStr = cateNameStr;
     }
 
 }

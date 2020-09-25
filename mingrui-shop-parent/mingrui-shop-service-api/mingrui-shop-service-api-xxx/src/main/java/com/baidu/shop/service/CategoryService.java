@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @ClassName CategoryService
@@ -42,4 +43,7 @@ public interface CategoryService {
     @ApiOperation(value = "通过分类id集合查询商品分类")
     @GetMapping(value = "category/getCategoryByIdList")
     Result<List<CategoryEntity>> getCategoryByIdList(@RequestParam String cidStr);
+
+    @GetMapping(value = "category/getCateName")
+    String getCateName(@RequestParam Integer id);
 }

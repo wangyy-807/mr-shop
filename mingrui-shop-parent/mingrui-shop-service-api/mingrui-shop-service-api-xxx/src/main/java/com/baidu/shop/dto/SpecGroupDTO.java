@@ -1,5 +1,6 @@
 package com.baidu.shop.dto;
 
+import com.baidu.shop.entities.SpecParamEntity;
 import com.baidu.shop.validate.group.MingruiOperation;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModel;
@@ -8,6 +9,7 @@ import lombok.Data;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 /**
  * @ClassName SpecGroupDTO
@@ -32,5 +34,5 @@ public class SpecGroupDTO extends BaseDTO {
     @NotEmpty(message = "规格组名称不能为空", groups = {MingruiOperation.Add.class})
     private String name;
 
-
+    private List<SpecParamEntity> specParamList;
 }

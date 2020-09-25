@@ -3,9 +3,11 @@ package com.baidu.shop.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.baidu.shop.base.BaseApiService;
 import com.baidu.shop.base.Result;
+import com.baidu.shop.dto.SpuDTO;
 import com.baidu.shop.entities.*;
 import com.baidu.shop.mapper.*;
 import com.baidu.shop.service.CategoryService;
+import com.baidu.shop.utils.JSONUtil;
 import com.baidu.shop.utils.ObjectUtil;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,7 +15,9 @@ import tk.mybatis.mapper.entity.Example;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -141,5 +145,16 @@ public class CategoryServiceImpl extends BaseApiService implements CategoryServi
         List<CategoryEntity> list = categoryMapper.selectByIdList(Arrays.asList(cidStr.split(",")).stream().map(cateIdStr -> Integer.parseInt(cateIdStr)).collect(Collectors.toList()));
 
         return this.setResultSuccess(list);
+    }
+
+    @Override
+    public String getCateName(Integer id) {
+
+        Example example = new Example(SpuEntity.class);
+        example.createCriteria().andEqualTo("cid3",id);
+        List<SpuEntity> spuList = spuMapper.selectByExample(example);
+        String name = categoryMapper.getCateNameByIds(spuList.get(0).getCid1(), spuList.get(0).getCid2());
+
+        return name;
     }
 }

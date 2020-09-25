@@ -8,6 +8,7 @@ import com.github.pagehelper.PageInfo;
 import com.google.gson.JsonObject;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.springframework.cloud.openfeign.SpringQueryMap;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import springfox.documentation.spring.web.json.Json;
@@ -26,7 +27,7 @@ public interface BrandService {
 
     @GetMapping(value = "brand/getBrandInfo")
     @ApiOperation(value = "获取品牌信息")
-    public Result<PageInfo<BrandEntity>> getBrandInfo(BrandDTO brandDTO);
+    public Result<PageInfo<BrandEntity>> getBrandInfo(@SpringQueryMap BrandDTO brandDTO);
 
     @PostMapping(value = "brand/save")
     @ApiOperation(value = "新增品牌信息")

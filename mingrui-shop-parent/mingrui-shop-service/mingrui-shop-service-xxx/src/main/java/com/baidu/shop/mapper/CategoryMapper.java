@@ -21,4 +21,7 @@ public interface CategoryMapper extends Mapper<CategoryEntity>, SelectByIdListMa
 
     @Select(value = "select GROUP_CONCAT(name SEPARATOR \"/\") from tb_category where id in (#{id1},#{id2},#{id3})")
     String getNameById(Integer id1,Integer id2,Integer id3);
+
+    @Select(value = "select GROUP_CONCAT(name SEPARATOR \"/\") from tb_category where id in (#{id1},#{id2})")
+    String getCateNameByIds(Integer id1,Integer id2);
 }

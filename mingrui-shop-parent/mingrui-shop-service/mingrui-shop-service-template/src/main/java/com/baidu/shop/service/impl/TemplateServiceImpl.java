@@ -90,6 +90,22 @@ public class TemplateServiceImpl extends BaseApiService implements TemplateServi
         return this.setResultSuccess();
     }
 
+    @Override
+    public Result<JSONObject> initStaticHTMLTemplate() {
+
+        //获取所有的spu信息,注意:应该写一个只获取id集合的接口,我只是为了省事
+        Result<List<SpuDTO>> spuInfo = goodsFeign.getSpuInfo(new SpuDTO());
+        if(spuInfo.getCode() == 200){
+
+            List<SpuDTO> spuList = spuInfo.getData();
+
+            spuList.stream().forEach(spu -> {
+                this.createStaticHTMLTemplate(spu.getId());
+            });
+        }
+        return this.setResultSuccess();
+    }
+
     private Map<String, Object> getStringObjectMap(Integer spuId) {
         Map<String, Object> map = new HashMap<>();
         SpuDTO spuDTO = new SpuDTO();
@@ -122,22 +138,6 @@ public class TemplateServiceImpl extends BaseApiService implements TemplateServi
             }
         }
         return map;
-    }
-
-    @Override
-    public Result<JSONObject> initStaticHTMLTemplate() {
-
-        //获取所有的spu信息,注意:应该写一个只获取id集合的接口,我只是为了省事
-        Result<List<SpuDTO>> spuInfo = goodsFeign.getSpuInfo(new SpuDTO());
-        if(spuInfo.getCode() == 200){
-
-            List<SpuDTO> spuList = spuInfo.getData();
-
-            spuList.stream().forEach(spu -> {
-                this.createStaticHTMLTemplate(spu.getId());
-            });
-        }
-        return this.setResultSuccess();
     }
     
     private List<BrandEntity> getBrandList(SpuDTO spuInfo){

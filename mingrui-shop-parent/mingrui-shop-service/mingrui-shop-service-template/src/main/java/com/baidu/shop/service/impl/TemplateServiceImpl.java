@@ -106,6 +106,18 @@ public class TemplateServiceImpl extends BaseApiService implements TemplateServi
         return this.setResultSuccess();
     }
 
+    @Override
+    public Result<JSONObject> delHTMLBySpuId(Integer spuId) {
+
+        File file = new File(staticHTMLPath + File.separator + spuId + ".html");
+
+        if(!file.delete()){
+            return this.setResultError("文件删除失败");
+        }
+
+        return this.setResultSuccess();
+    }
+
     private Map<String, Object> getStringObjectMap(Integer spuId) {
         Map<String, Object> map = new HashMap<>();
         SpuDTO spuDTO = new SpuDTO();

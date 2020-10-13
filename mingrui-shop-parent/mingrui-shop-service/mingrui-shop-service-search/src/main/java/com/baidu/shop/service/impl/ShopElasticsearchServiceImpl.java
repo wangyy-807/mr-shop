@@ -84,8 +84,8 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
         if (!indexOperations.exists()){
             indexOperations.createMapping();
         }
-
-        List<GoodsDoc> goodsDocs = this.esGoodsInfo();
+        SpuDTO spuDTO = new SpuDTO();
+        List<GoodsDoc> goodsDocs = this.esGoodsInfo(spuDTO);
         elasticsearchRestTemplate.save(goodsDocs);
 
         return this.setResultSuccess();
@@ -123,6 +123,26 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
                 brandList, categoryList, goodsDocs, map1, data);
 
         return goodsResponse;
+    }
+
+    @Override
+    public Result<JSONObject> saveData(Integer spuId) {
+        SpuDTO spuDTO = new SpuDTO();
+        spuDTO.setId(spuId);
+        List<GoodsDoc> goodsDocs = this.esGoodsInfo(spuDTO);
+        GoodsDoc goodsDoc = goodsDocs.get(0);
+        elasticsearchRestTemplate.save(goodsDoc);
+        return this.setResultSuccess();
+    }
+
+    @Override
+    public Result<JSONObject> delData(Integer spuId) {
+
+        GoodsDoc goodsDoc = new GoodsDoc();
+        goodsDoc.setId(spuId.longValue());
+
+        elasticsearchRestTemplate.delete(goodsDoc);
+        return this.setResultSuccess();
     }
 
     private Map<String, List<String>> getSpecParam(String search, Integer hotCid) {
@@ -217,10 +237,9 @@ public class ShopElasticsearchServiceImpl extends BaseApiService implements Shop
         return brandResult.getData();
     }
 
-    private List<GoodsDoc> esGoodsInfo() {
+    private List<GoodsDoc> esGoodsInfo(SpuDTO spuDTO) {
 
         List<GoodsDoc> goodsDocs = new ArrayList<>();
-        SpuDTO spuDTO = new SpuDTO();
         Result<List<SpuDTO>> spuInfo = goodsFeign.getSpuInfo(spuDTO);
         if (spuInfo.getCode() == HttpStatus.OK.value()){
             List<SpuDTO> spuList = spuInfo.getData();

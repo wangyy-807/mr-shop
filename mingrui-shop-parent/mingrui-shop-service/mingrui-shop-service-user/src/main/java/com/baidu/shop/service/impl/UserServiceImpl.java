@@ -6,11 +6,14 @@ import com.baidu.shop.base.Result;
 import com.baidu.shop.dto.UserDTO;
 import com.baidu.shop.entity.UserEntity;
 import com.baidu.shop.mapper.UserMapper;
+import com.baidu.shop.redis.repository.RedisRepository;
 import com.baidu.shop.service.UserService;
 import com.baidu.shop.utils.BCryptUtil;
 import com.baidu.shop.utils.BaiduBeanUtil;
 import com.baidu.shop.utils.LuosimaoDuanxinUtil;
+import io.lettuce.core.dynamic.codec.RedisCodecResolver;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 import tk.mybatis.mapper.entity.Example;
 
@@ -32,9 +35,13 @@ public class UserServiceImpl extends BaseApiService implements UserService {
     @Resource
     private UserMapper userMapper;
 
+    @Autowired
+    private RedisRepository redisRepository;
+
     @Override
     public Result<JSONObject> register(UserDTO userDTO) {
 
+        System.out.println(userDTO);
         UserEntity userEntity = BaiduBeanUtil.copyProperties(userDTO, UserEntity.class);
         userEntity.setCreated(new Date());
         userEntity.setPassword(BCryptUtil.hashpw(userEntity.getPassword(),BCryptUtil.gensalt()));
@@ -67,8 +74,23 @@ public class UserServiceImpl extends BaseApiService implements UserService {
 
         log.debug("发送短信验证码，手机号为{}，内容是{}",userDTO.getPhone(),code);
 
+        redisRepository.set("valid-code-" + userDTO.getPhone(), code);
+
+        redisRepository.expire("valid-code-" + userDTO.getPhone(),120);
+
         //LuosimaoDuanxinUtil.SendCode(userDTO.getPhone(),code);
         //LuosimaoDuanxinUtil.sendSpeak(userDTO.getPhone(),code);
+
+        return this.setResultSuccess();
+    }
+
+    @Override
+    public Result<JSONObject> checkValidCode(String phone ,String validcode) {
+
+        String redisValidCode = redisRepository.get("valid-code-" + phone);
+        if(!validcode.equals(redisValidCode)){
+            return this.setResultError("验证码输入错误");
+        }
 
         return this.setResultSuccess();
     }

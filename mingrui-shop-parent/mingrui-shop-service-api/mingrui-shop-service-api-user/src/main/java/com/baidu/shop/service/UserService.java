@@ -25,7 +25,7 @@ public interface UserService {
 
     @ApiOperation(value = "用户注册")
     @PostMapping(value = "user/register")
-    Result<JSONObject> register(UserDTO userDTO);
+    Result<JSONObject> register(@RequestBody UserDTO userDTO);
 
     @ApiOperation(value = "验证用户名/手机号")
     @GetMapping(value = "user/check/{value}/{type}")
@@ -34,5 +34,9 @@ public interface UserService {
     @ApiOperation(value = "用户注册")
     @PostMapping(value = "user/send")
     Result<JSONObject> sendValidCode(@RequestBody UserDTO userDTO);
+
+    @ApiOperation(value = "验证码校验")
+    @GetMapping(value = "user/checkValidCode")
+    Result<JSONObject> checkValidCode(String phone ,String validcode);
 
 }

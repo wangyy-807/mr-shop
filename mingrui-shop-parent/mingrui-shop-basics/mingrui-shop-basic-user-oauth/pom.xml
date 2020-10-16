@@ -36,6 +36,29 @@
             <artifactId>pagehelper-spring-boot-starter</artifactId>
             <version>1.2.10</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.baidu</groupId>
+            <artifactId>mingrui-shop-common-oauth</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.baidu</groupId>
+            <artifactId>mingrui-shop-common-core</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!--springboot整合redis-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <!--redis需要的对象池 redis可以将存储对象-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
+            <version>2.8.0</version>
+        </dependency>
     </dependencies>
 
 </project>

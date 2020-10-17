@@ -3,6 +3,7 @@ package com.baidu.filter;
 import com.baidu.config.JwtConfig;
 import com.baidu.shop.utils.CookieUtils;
 import com.baidu.shop.utils.JwtUtils;
+import com.baidu.shop.utils.StringUtil;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
@@ -62,12 +63,19 @@ public class LoginFilter extends ZuulFilter {
         // 获取token
         String token = CookieUtils.getCookieValue(request, jwtConfig.getCookieName());
         logger.info("token信息"+token);
-        // 校验
-        try {
-            // 通过公钥解密，如果成功，就放行，失败就拦截
-            JwtUtils.getInfoFromToken(token, jwtConfig.getPublicKey());
-        } catch (Exception e) {
-            logger.info("解析失败 拦截"+token);
+        if (StringUtil.isNotEmpty(token)){
+            // 校验
+            try {
+                // 通过公钥解密，如果成功，就放行，失败就拦截
+                JwtUtils.getInfoFromToken(token, jwtConfig.getPublicKey());
+            } catch (Exception e) {
+                logger.info("解析失败 拦截"+token);
+                // 校验出现异常，返回403
+                ctx.setSendZuulResponse(false);
+                ctx.setResponseStatusCode(403);
+            }
+        }else{
+            logger.info("token为空");
             // 校验出现异常，返回403
             ctx.setSendZuulResponse(false);
             ctx.setResponseStatusCode(403);

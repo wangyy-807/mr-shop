@@ -54,6 +54,11 @@ public class UserOauthController extends BaseApiService {
 
         try {
             UserInfo userInfo = JwtUtils.getInfoFromToken(token, jwtConfig.getPublicKey());
+
+            String newToken = JwtUtils.generateToken(userInfo,jwtConfig.getPrivateKey(),jwtConfig.getExpire());
+
+            CookieUtils.setCookie(request,response,jwtConfig.getCookieName(),newToken,jwtConfig.getCookieMaxAge(),true);
+
             return this.setResultSuccess(userInfo);
         } catch (Exception e) {//如果有异常 说明token有问题
             //e.printStackTrace();

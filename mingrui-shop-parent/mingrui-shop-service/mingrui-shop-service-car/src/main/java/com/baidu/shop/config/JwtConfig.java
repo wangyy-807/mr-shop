@@ -1,4 +1,4 @@
-package com.baidu.config;
+package com.baidu.shop.config;
 
 import com.baidu.shop.utils.RsaUtils;
 import lombok.Data;
@@ -9,13 +9,12 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
 import java.security.PublicKey;
-import java.util.List;
 
 /**
  * @ClassName JwtConfig
  * @Description: TODO
  * @Author wangyue
- * @Date 2020/10/16
+ * @Date 2020/10/19
  * @Version V1.0
  **/
 @Data
@@ -23,29 +22,21 @@ import java.util.List;
 public class JwtConfig {
 
     @Value("${mrshop.jwt.pubKeyPath}")
-    private String pubKeyPath;// 公钥地址
-
+    private String pubKeyPath;// 公钥
     @Value("${mrshop.jwt.cookieName}")
-    private String cookieName;
-
-    //#{}代表要使用springEL表达式
-    @Value("#{'${mrshop.filter.excludes}'.split(',')}")
-    private List<String> excludePath;
+    private String cookieName;// cookie名称
 
     private PublicKey publicKey; // 公钥
-
-
     private static final Logger logger = LoggerFactory.getLogger(JwtConfig.class);
 
     @PostConstruct
     public void init(){
         try {
-            // 获取公钥和私钥
+            // 获取公钥
             this.publicKey = RsaUtils.getPublicKey(pubKeyPath);
         } catch (Exception e) {
             logger.error("初始化公钥失败！", e);
             throw new RuntimeException();
         }
     }
-
 }

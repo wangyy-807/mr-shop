@@ -1,6 +1,6 @@
-package com.baidu.filter;
+package com.baidu.shop.filter;
 
-import com.baidu.config.JwtConfig;
+import com.baidu.shop.config.JwtConfig;
 import com.baidu.shop.utils.CookieUtils;
 import com.baidu.shop.utils.JwtUtils;
 import com.baidu.shop.utils.StringUtil;

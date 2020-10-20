@@ -1,4 +1,4 @@
-package com.baidu.global;
+package com.baidu.shop.global;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

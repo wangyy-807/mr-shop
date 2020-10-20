@@ -203,16 +203,16 @@
                             <div class="fl title">
                                 <div class="control-group">
                                     <div class="controls">
-                                        <input autocomplete="off" type="text" disabled value="1" minnum="1" class="itxt" />
-                                        <a href="javascript:void(0)" class="increment plus">+</a>
-                                        <a href="javascript:void(0)" class="increment mins">-</a>
+                                        <input autocomplete="off" type="text" disabled v-model="num" value="1" minnum="1" class="itxt" />
+                                        <a href="javascript:void(0)" class="increment plus" @click="increment">+</a>
+                                        <a href="javascript:void(0)" class="increment mins" @click="decrement">-</a>
                                     </div>
                                 </div>
                             </div>
                             <div class="fl">
                                 <ul class="btn-choose unstyled">
                                     <li>
-                                        <a href="success-cart.html" target="_blank" class="sui-btn  btn-danger addshopcar">加入购物车</a>
+                                        <a href="/success-cart.html" @click.prevent="addCar" class="sui-btn  btn-danger addshopcar">加入购物车</a>
                                     </li>
                                 </ul>
                             </div>
@@ -655,12 +655,58 @@
             skus,
             spuDetailInfo,
             indexes,
-            groupSpec
+            groupSpec,
+            num:1
         },
         components:{
             b2cTop: () => import('/js/pages/top.js')
         },
+        methods:{
+            addCar () {
+                mrshop.checkUserLogin().then(resp => {
+                    mrshop.http.post('',{
+                        skuId: this.sku.id,
+                        num: this.num
+                    }).then(resp => {
+                        console.log(resp)
+                    }).catch(error => console.log(error))
+                }).catch(() => {
+                    let carList = mrshop.store.get("carList") || [];
+                    let car = carList.find(car => car.skuId == this.sku.id);
+                    if(car){
+                        car.num += this.num;
+                    }else{
+                        car = {
+                            skuId:this.sku.id,
+                            title:this.sku.title,
+                            image:this.imageArr.length > 0 ? this.imageArr[0] : '',
+                            price:this.sku.price,
+                            num:this.num,
+                            ownSpec:JSON.stringify(this.ownSpec)
+                        }
+                        carList.push(car);
+                    }
+                    mrshop.store.set("carList",carList);
+                })
+                window.location.href = '/success-cart.html?key=' + car.skuId;
+            },
+
+            increment () {
+                if(this.num < this.sku.stock) this.num++;
+            },
+            decrement () {
+                if(this.num > 1) this.num--;
+            }
+        },
         computed:{
+            ownSpec(){
+                const ownSpec = JSON.parse(this.sku.ownSpec);
+                const obj = {};
+                Object.keys(ownSpec).forEach(key => {
+                    obj[this.specParamMap[key]] = ownSpec[key]
+                })
+                return obj;
+            },
             sku(){
                 const index = Object.values(this.indexes).join("_");
                 return this.skus.find(sku => sku.indexes == index);

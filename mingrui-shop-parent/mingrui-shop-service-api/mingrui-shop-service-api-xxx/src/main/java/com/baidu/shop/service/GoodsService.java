@@ -6,8 +6,6 @@ import com.baidu.shop.dto.SkuDTO;
 import com.baidu.shop.dto.SpuDTO;
 import com.baidu.shop.entities.SkuEntity;
 import com.baidu.shop.entities.SpuDetailEntity;
-import com.baidu.shop.entities.SpuEntity;
-import com.github.pagehelper.PageInfo;
 import com.google.gson.JsonObject;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -52,5 +50,9 @@ public interface GoodsService {
 
     @ApiOperation(value = "上下架商品")
     @PutMapping(value = "goods/upperAndLowerShelves")
-    Result<JsonObject> upperAndLowerShelves(@RequestBody SpuDTO spuDTO);
+    Result<JSONObject> upperAndLowerShelves(@RequestBody SpuDTO spuDTO);
+
+    @ApiOperation(value = "通过skuId获得数据")
+    @GetMapping(value = "goods/getSkuBySkuId")
+    Result<SkuEntity> getSkuBySkuId(@RequestParam String skuId);
 }

@@ -664,11 +664,13 @@
         methods:{
             addCar () {
                 mrshop.checkUserLogin().then(resp => {
-                    mrshop.http.post('',{
+                    mrshop.http.post('/car/car/addCar',{
                         skuId: this.sku.id,
                         num: this.num
                     }).then(resp => {
-                        console.log(resp)
+                        if (resp.data.code == 200){
+                            window.location.href = '/success-cart.html?key=' + this.sku.id + '&returnUrl=' + window.location;
+                        }
                     }).catch(error => console.log(error))
                 }).catch(() => {
                     let carList = mrshop.store.get("carList") || [];
@@ -687,8 +689,9 @@
                         carList.push(car);
                     }
                     mrshop.store.set("carList",carList);
+                    window.location.href = '/success-cart.html?key=' + this.sku.id + '&returnUrl=' + window.location;
                 })
-                window.location.href = '/success-cart.html?key=' + car.skuId;
+
             },
 
             increment () {

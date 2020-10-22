@@ -143,7 +143,7 @@ public class GoodsServiceImpl extends BaseApiService implements GoodsService {
 
     @Transactional
     @Override
-    public Result<JsonObject> upperAndLowerShelves(SpuDTO spuDTO) {
+    public Result<JSONObject> upperAndLowerShelves(SpuDTO spuDTO) {
         SpuEntity spuEntity = new SpuEntity();
         spuEntity.setId(spuDTO.getId());
         if (spuDTO.getSaleable() == 1){
@@ -194,6 +194,14 @@ public class GoodsServiceImpl extends BaseApiService implements GoodsService {
 
         this.addSkuAndStock(spuDTO.getSkus(),spuId,date);
         return spuEntity.getId();
+    }
+
+    @Override
+    public Result<SkuEntity> getSkuBySkuId(String skuId) {
+
+        SkuEntity skuEntity = skuMapper.selectByPrimaryKey(Long.valueOf(skuId));
+
+        return this.setResultSuccess(skuEntity);
     }
 
     private void addSkuAndStock(List<SkuDTO> skus, Integer id, Date date) {

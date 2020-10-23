@@ -6,6 +6,7 @@ import com.baidu.shop.business.OrderService;
 import com.baidu.shop.config.JwtConfig;
 import com.baidu.shop.dto.CarDTO;
 import com.baidu.shop.dto.OrderDTO;
+import com.baidu.shop.dto.OrderInfo;
 import com.baidu.shop.dto.UserInfo;
 import com.baidu.shop.entity.OrderDetailEntity;
 import com.baidu.shop.entity.OrderEntity;
@@ -15,11 +16,13 @@ import com.baidu.shop.mapper.OrderMapper;
 import com.baidu.shop.mapper.OrderStatusMapper;
 import com.baidu.shop.redis.repository.RedisRepository;
 import com.baidu.shop.status.HTTPStatus;
+import com.baidu.shop.utils.BaiduBeanUtil;
 import com.baidu.shop.utils.IdWorker;
 import com.baidu.shop.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
+import tk.mybatis.mapper.entity.Example;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
@@ -118,5 +121,22 @@ public class OrderServiceImpl extends BaseApiService implements OrderService {
         Arrays.asList(orderDTO.getSkuIds().split(",")).stream().forEach(skuidStr -> {
             redisRepository.delHash(GOODS_CAR_PRE + userInfo.getId(),skuidStr);
         });
+    }
+
+    @Override
+    public Result<OrderInfo> getOrderInfoByOrderId(Long orderId) {
+
+        OrderEntity orderEntity = orderMapper.selectByPrimaryKey(orderId);
+        OrderInfo orderInfo = BaiduBeanUtil.copyProperties(orderEntity, OrderInfo.class);
+
+        Example example = new Example(OrderDetailEntity.class);
+        example.createCriteria().andEqualTo("orderId", orderInfo.getOrderId());
+        List<OrderDetailEntity> orderDetailEntities = orderDetailMapper.selectByExample(example);
+        orderInfo.setOrderDetailList(orderDetailEntities);
+
+        OrderStatusEntity orderStatusEntity = orderStatusMapper.selectByPrimaryKey(orderInfo.getOrderId());
+        orderInfo.setOrderStatusEntity(orderStatusEntity);
+
+        return this.setResultSuccess(orderInfo);
     }
 }
